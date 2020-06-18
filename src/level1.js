@@ -25,12 +25,32 @@ export default new Phaser.Class({
      this.dieResult = 1;
      //Define the items on the screen. Snakes, ladders etc.
      this.items = [{'land':3,'end':38,'up':true},
-
+        {'land':6,'end':26,'up':true},
+        {'land':28,'end':46,'up':true},
+        {'land':30,'end':91,'up':true},
+        {'land':34,'end':4,'up':false},
+        {'land':58,'end':36,'up':false},
+        {'land':64,'end':8,'up':false},
+        {'land':61,'end':81,'up':true},
+        {'land':83,'end':65,'up':false},
+        {'land':75,'end':85,'up':true},
+        {'land':89,'end':49,'up':false},
+        {'land':99,'end':21,'up':false}
       ];
-
 
      this.add.image(0,0,'board').setOrigin(0,0).setScale(0.5);
      this.add.image(0,0,'items').setOrigin(0,0).setScale(0.5);
+
+     //Add the square numbers
+     for(var i=1;i<101;i++) {
+       var squareCoords = this.getCoordsFromSquare(i);
+       this.add.text(squareCoords.x, squareCoords.y, i, {
+           fontSize: '15px',
+           fill: '#ffffff',
+           stroke: '#000000',
+           strokeThickness: 1
+       }).setOrigin(0,0);
+     }
 
       // set the boundaries of our game world
       this.physics.world.bounds.width = 1600;
@@ -41,6 +61,7 @@ export default new Phaser.Class({
       //this.player = this.physics.add.sprite(75,425, 'player',0);
       //TESTING
       //this.player = this.physics.add.sprite(560, 216, 'player',0);
+      this.player.rolling = false; //Control when dice is rolled
       this.player.setCollideWorldBounds(true); // don't go out of the map
       this.player.body.setAllowGravity(false);
 
@@ -79,19 +100,18 @@ export default new Phaser.Class({
       });
       */
       this.cursors = this.input.keyboard.createCursorKeys();
-      this.add.text(100, 100, 'i Hello ', {
+
+      /*
+      this.blackRectangle = this.add.graphics({ fillStyle: { color: 0x000000} }).setAlpha(0);
+      var text = this.add.text(100, 100, 'HEEEEEEEEEEEEEE ', {
+          fontFamily: 'Londrina Solid',
           fontSize: '10px',
           fill: '#ffffff'
-      });
+      }).setScrollFactor(0);
+      */
 
-      for(var i=1;i<101;i++) {
-        var squareCoords = this.getCoordsFromSquare(i);
-        console.log(squareCoords);
-        this.add.text(squareCoords.x, squareCoords.y, 'i', {
-            fontSize: '10px',
-            fill: '#ffffff'
-        });
-      }
+
+
 
 
       // set bounds so the camera won't go outside the game world
@@ -146,13 +166,13 @@ export default new Phaser.Class({
 
 
   update: function(time, delta) {
-    if (this.cursors.space.isDown && !this.rolling) {
-      this.rolling = true;
+    if (this.cursors.space.isDown && !this.player.rolling) {
+      this.player.rolling = true;
       this.die.anims.play('dice',true);
       this.diceTimer = this.time.addEvent({
         delay: 1000,
         callback: function() {
-          this.rolling = false;
+          //this.rolling = false;
           this.dieResult = randomNumber(1,7);
           this.die.anims.pause(this.die.anims.currentAnim.frames[this.stopFrames[this.dieResult]]);
           this.movePlayer(this.dieResult);
@@ -269,6 +289,7 @@ export default new Phaser.Class({
         //y: spaces[nextMoveIdx].pixelY + 16,
         onComplete: function() {
           player.anims.stop('walk',true);
+          player.rolling = false;
         },
       });
 
@@ -282,6 +303,7 @@ export default new Phaser.Class({
         //y: spaces[nextMoveIdx].pixelY + 16,
         onComplete: function() {
           player.anims.stop('walk',true);
+          player.rolling = false;
         },
       });
     }
