@@ -16,6 +16,7 @@ export default new Phaser.Class({
         });
         this.load.image('board', 'assets/board.png');
         this.load.image('items', 'assets/items.png');
+        this.load.image('panel', 'assets/panel.png');
         this.load.atlas('player', 'assets/player.png', 'assets/player.json');
         this.load.atlas('dice', 'assets/dice.png', 'assets/dice.json')
     },
@@ -61,6 +62,7 @@ export default new Phaser.Class({
       this.physics.world.bounds.height = 1200;
 
       this.player = this.physics.add.sprite(75,525, 'player',0);
+      //this.player = this.physics.add.sprite(525,75, 'player',0);
       //this.player = this.physics.add.sprite(375,475, 'player',0);
       //this.player = this.physics.add.sprite(75,425, 'player',0);
       //TESTING
@@ -264,6 +266,7 @@ export default new Phaser.Class({
         //y: spaces[nextMoveIdx].pixelY + 16,
         onComplete: function() {
           player.anims.stop('walk',true);
+          scene.gamePanelContainer.destroy(); // remove the side text
           var endMsg = ["Well done! You have managed to get through a day in the life of an autistic person.",
             "This is how difficult it can be, sometimes good things happen, sometimes bad."];
           scene.messageScreen("Congratulations!",endMsg,"Press Space to Start Over");
@@ -381,6 +384,8 @@ export default new Phaser.Class({
     this.blackRectangle.setAlpha(0.5).fillRectShape(coverScreen);
     this.blackRectangle.setVisible(true);
     this.player.setVisible(false);
+    var panel = this.add.image(400,300,'panel').setOrigin(0.5,0.5).setScale(0.5);
+    this.messageContainer.add(panel);
 
     var titleText = this.add.text(400, 100, title, {
         fontSize: '20px',
@@ -415,7 +420,7 @@ export default new Phaser.Class({
 
     var blinkOn=true;
     this.timer = this.time.addEvent({
-      delay: 200,
+      delay: 500,
       callback: function() {
         if(blinkOn) {
           flashText.setVisible(false);
@@ -432,7 +437,8 @@ export default new Phaser.Class({
   },
 
   setGamePanel: function() {
-    this.add.text(675, 75, "SQUARE", {
+    this.gamePanelContainer = this.add.container(0,0);
+    var squareWord = this.add.text(675, 75, "SQUARE", {
         fontSize: '20px',
         fill: '#ffffff',
         wordWrap: { width: 450, useAdvancedWrap: true }
@@ -448,9 +454,13 @@ export default new Phaser.Class({
         align: 'center',
         wordWrap: { width: 100, useAdvancedWrap: true }
     }).setOrigin(0.5,0)
+    this.gamePanelContainer.add(squareWord);
+    this.gamePanelContainer.add(this.squareText);
+    this.gamePanelContainer.add(flashText);
+
     var blinkOn=true;
     this.timer = this.time.addEvent({
-      delay: 200,
+      delay: 500,
       callback: function() {
         if(blinkOn) {
           flashText.setVisible(false);
