@@ -21,6 +21,8 @@ export default new Phaser.Class({
     },
 
    create: function() {
+     this.running = false;
+     this.gameOver = false;
      this.rolling = false;
      this.dieResult = 1;
      //Define the items on the screen. Snakes, ladders etc.
@@ -52,16 +54,18 @@ export default new Phaser.Class({
        }).setOrigin(0,0);
      }
 
+
+
       // set the boundaries of our game world
       this.physics.world.bounds.width = 1600;
       this.physics.world.bounds.height = 1200;
 
-      this.player = this.physics.add.sprite(175,525, 'player',0);
+      this.player = this.physics.add.sprite(75,525, 'player',0);
       //this.player = this.physics.add.sprite(375,475, 'player',0);
       //this.player = this.physics.add.sprite(75,425, 'player',0);
       //TESTING
       //this.player = this.physics.add.sprite(560, 216, 'player',0);
-      this.player.rolling = false; //Control when dice is rolled
+      this.player.rolling = true; //Control when dice is rolled
       this.player.setCollideWorldBounds(true); // don't go out of the map
       this.player.body.setAllowGravity(false);
 
@@ -101,16 +105,14 @@ export default new Phaser.Class({
       */
       this.cursors = this.input.keyboard.createCursorKeys();
 
-      /*
       this.blackRectangle = this.add.graphics({ fillStyle: { color: 0x000000} }).setAlpha(0);
-      var text = this.add.text(100, 100, 'HEEEEEEEEEEEEEE ', {
-          fontFamily: 'Londrina Solid',
-          fontSize: '10px',
-          fill: '#ffffff'
-      }).setScrollFactor(0);
-      */
+      this.messageContainer = this.add.container(0,0);
 
-
+      var startMsg = ["Every day is a huge challenge for an autistic person. Just like a game of Snakes and Ladders" +
+        ", there are ups and downs.", "This game demonstrates how a typical day can be for us. To play simply press space " +
+        "to roll the die, each snake or ladder will describe a random aspect of autistic life, positive if it is a ladder and "+
+        "negative if you land on a snake."]
+      this.messageScreen("Snakes and Ladders",startMsg,"Press Space to Start");
 
 
 
@@ -166,21 +168,47 @@ export default new Phaser.Class({
 
 
   update: function(time, delta) {
-    if (this.cursors.space.isDown && !this.player.rolling) {
-      this.player.rolling = true;
-      this.die.anims.play('dice',true);
-      this.diceTimer = this.time.addEvent({
-        delay: 1000,
-        callback: function() {
-          //this.rolling = false;
-          this.dieResult = randomNumber(1,7);
-          this.die.anims.pause(this.die.anims.currentAnim.frames[this.stopFrames[this.dieResult]]);
-          this.movePlayer(this.dieResult);
-          //this.die.anims.stop('dice');
-        },
-        callbackScope: this,
-        loop: false
-      });
+    if(this.running) {
+      if (this.cursors.space.isDown && !this.player.rolling) {
+        this.player.rolling = true;
+        this.die.anims.play('dice',true);
+        this.diceTimer = this.time.addEvent({
+          delay: 1000,
+          callback: function() {
+            //this.rolling = false;
+            this.dieResult = randomNumber(1,7);
+            this.die.anims.pause(this.die.anims.currentAnim.frames[this.stopFrames[this.dieResult]]);
+            this.movePlayer(this.dieResult);
+            //this.die.anims.stop('dice');
+          },
+          callbackScope: this,
+          loop: false
+        });
+      }
+    } else {
+      //Triggers starting of game
+      if (this.cursors.space.isDown) {
+        if(this.gameOver) {
+          this.scene.restart();
+        }
+        this.running = true;
+        //Delay rolling
+        this.time.addEvent({
+          delay: 500,
+          callback: function() {
+            this.player.rolling = false; //Allow dice rolls
+          },
+          callbackScope: this,
+          loop: false
+        })
+        this.player.setVisible(true);
+        this.blackRectangle.setVisible(false);
+        this.messageContainer.destroy();
+        this.messageContainer = this.add.container(0,0);
+
+        //Set up the in game text
+        this.setGamePanel();
+      }
     }
   },
 
@@ -223,91 +251,218 @@ export default new Phaser.Class({
   movePlayer: function(squares) {
     var player = this.player;
     var currentCoords = {x:player.x,y:player.y};
-
+    var scene = this;
     var square = this.getSquare(player.x,player.y);
     var nextSquare = square + squares;
-    console.log(square);
-    var nextSquareCoords = this.getCoordsFromSquare(nextSquare);
-
-
-    //var current = player.x;
-    //var nextPosX = current + squares * 50;
-    //this.player.setX(current + squares * 50);
-    //player.moving = false;
-    //Reverses the sprite depending on the level of the board
-    if(nextSquareCoords.y % 100 == 75) {
-      player.willFlipX = true;
-    } else {
-      player.willFlipX = false;
-    }
-
-    //Check if player is moving up a level
-    if(nextSquareCoords.y < currentCoords.y) {
-      var goingUp = true;
-    }  else {
-      var goingUp = false;
-    }
-
-
-
-    player.anims.play('walk',true);
-
-    if(goingUp) {
-      if(player.willFlipX) {
-        var endOfBoardX = 525;
-      } else {
-        var endOfBoardX = 75;
-      }
-      //Move to the end first
-      var scene = this;
-
-      var timeline = this.tweens.createTimeline();
-
-      timeline.add({
-        targets: this.player,
-        x: endOfBoardX,
-        y: currentCoords.y
-      });
-
-      timeline.add({
-        targets: this.player,
-        x: endOfBoardX,
-        y: currentCoords.y - 50,
-        onComplete: function() {
-          if(player.willFlipX) {
-            player.flipX = true;
-          } else {
-            player.flipX = false;
-          }
-        },
-      });
-
-      timeline.add({
-        targets: this.player,
-        x: nextSquareCoords.x,
-        y: nextSquareCoords.y,
-        //y: spaces[nextMoveIdx].pixelY + 16,
-        onComplete: function() {
-          player.anims.stop('walk',true);
-          player.rolling = false;
-        },
-      });
-
-      timeline.play();
-
-    } else {
+    this.squareText.setText(nextSquare);
+    if(nextSquare >= 100) {
+      //Move player to end of board and play end message
       this.tweens.add({
         targets: this.player,
-        x: nextSquareCoords.x,
-        y: nextSquareCoords.y,
+        x: 75,
+        y: 75,
         //y: spaces[nextMoveIdx].pixelY + 16,
         onComplete: function() {
           player.anims.stop('walk',true);
-          player.rolling = false;
+          var endMsg = ["Well done! You have managed to get through a day in the life of an autistic person.",
+            "This is how difficult it can be, sometimes good things happen, sometimes bad."];
+          scene.messageScreen("Congratulations!",endMsg,"Press Space to Start Over");
+          scene.gameOver = true;
+          scene.running = false;
+        },
+      });
+    } else {
+      console.log(square);
+      var nextSquareCoords = this.getCoordsFromSquare(nextSquare);
+
+      //Reverses the sprite depending on the level of the board
+      if(nextSquareCoords.y % 100 == 75) {
+        player.willFlipX = true;
+      } else {
+        player.willFlipX = false;
+      }
+
+      //Check if player is moving up a level
+      if(nextSquareCoords.y < currentCoords.y) {
+        var goingUp = true;
+      }  else {
+        var goingUp = false;
+      }
+
+      player.anims.play('walk',true);
+
+      if(goingUp) {
+        if(player.willFlipX) {
+          var endOfBoardX = 525;
+        } else {
+          var endOfBoardX = 75;
+        }
+        //Move to the end first
+        var timeline = this.tweens.createTimeline();
+
+        timeline.add({
+          targets: this.player,
+          x: endOfBoardX,
+          y: currentCoords.y
+        });
+
+        timeline.add({
+          targets: this.player,
+          x: endOfBoardX,
+          y: currentCoords.y - 50,
+          onComplete: function() {
+            if(player.willFlipX) {
+              player.flipX = true;
+            } else {
+              player.flipX = false;
+            }
+          },
+        });
+
+        timeline.add({
+          targets: this.player,
+          x: nextSquareCoords.x,
+          y: nextSquareCoords.y,
+          //y: spaces[nextMoveIdx].pixelY + 16,
+          onComplete: function() {
+            player.anims.stop('walk',true);
+            scene.checkSquare(nextSquare);
+            //player.rolling = false;
+          },
+        });
+
+        timeline.play();
+
+      } else {
+        this.tweens.add({
+          targets: this.player,
+          x: nextSquareCoords.x,
+          y: nextSquareCoords.y,
+          //y: spaces[nextMoveIdx].pixelY + 16,
+          onComplete: function() {
+            player.anims.stop('walk',true);
+            scene.checkSquare(nextSquare);
+            //player.rolling = false;
+          },
+        });
+      }
+    }
+  },
+
+  checkSquare: function(square) {
+    var item = this.items.filter(i => i.land == square);
+    var player = this.player;
+
+    if(item.length > 0) {
+      var destination = this.getCoordsFromSquare(item[0].end);
+      this.squareText.setText(item[0].end);
+      player.anims.play('walk',true);
+
+      this.tweens.add({
+        targets: this.player,
+        x: destination.x,
+        y: destination.y,
+        onComplete: function() {
+          if(destination.y % 100 == 75) {
+            player.flipX = true; //Odd
+          } else {
+            player.flipX = false; //Even level
+          }
+          player.anims.stop('walk',true);
         },
       });
     }
+    this.player.rolling = false;
+  },
 
+  messageScreen: function(title,text, message) {
+    //Set up the welcome screen
+    var coverScreen = new Phaser.Geom.Rectangle(0, 0, 800,600 );
+    this.blackRectangle.setAlpha(0.5).fillRectShape(coverScreen);
+    this.blackRectangle.setVisible(true);
+    this.player.setVisible(false);
+
+    var titleText = this.add.text(400, 100, title, {
+        fontSize: '20px',
+        fill: '#ffffff',
+        wordWrap: { width: 450, useAdvancedWrap: true }
+    }).setOrigin(0.5,0);
+
+    this.messageContainer.add(titleText);
+
+    var txtOffset = 150;
+    for(var i=0;i<text.length;i++) {
+      var scrText = this.add.text(400, txtOffset, text[i], {
+          fontSize: '20px',
+          fill: '#ffffff',
+          wordWrap: { width: 450, useAdvancedWrap: true }
+      }).setOrigin(0.5,0);
+
+      console.log(scrText.height);
+      txtOffset += scrText.height + 20;
+      console.log(txtOffset);
+      this.messageContainer.add(scrText);
+    }
+
+    var flashText = this.add.text(400, txtOffset+20, message, {
+        fontSize: '20px',
+        fill: '#ffffff',
+        wordWrap: { width: 450, useAdvancedWrap: true }
+    }).setOrigin(0.5,0);
+
+    this.messageContainer.add(flashText);
+    this.messageContainer.setVisible(true);
+
+    var blinkOn=true;
+    this.timer = this.time.addEvent({
+      delay: 200,
+      callback: function() {
+        if(blinkOn) {
+          flashText.setVisible(false);
+          blinkOn = false;
+        } else {
+          flashText.setVisible(true);
+          blinkOn = true;
+        }
+      },
+      callbackScope: this,
+      loop: true
+    });
+
+  },
+
+  setGamePanel: function() {
+    this.add.text(675, 75, "SQUARE", {
+        fontSize: '20px',
+        fill: '#ffffff',
+        wordWrap: { width: 450, useAdvancedWrap: true }
+    }).setOrigin(0.5,0)
+    this.squareText = this.add.text(675, 125, "1", {
+        fontSize: '20px',
+        fill: '#ffffff',
+        wordWrap: { width: 450, useAdvancedWrap: true }
+    }).setOrigin(0.5,0);
+    var flashText = this.add.text(675, 275, "PRESS SPACE TO ROLL", {
+        fontSize: '20px',
+        fill: '#ffffff',
+        align: 'center',
+        wordWrap: { width: 100, useAdvancedWrap: true }
+    }).setOrigin(0.5,0)
+    var blinkOn=true;
+    this.timer = this.time.addEvent({
+      delay: 200,
+      callback: function() {
+        if(blinkOn) {
+          flashText.setVisible(false);
+          blinkOn = false;
+        } else {
+          flashText.setVisible(true);
+          blinkOn = true;
+        }
+      },
+      callbackScope: this,
+      loop: true
+    });
   }
 
 
