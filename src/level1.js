@@ -11,12 +11,12 @@ export default new Phaser.Class({
     preload: function () {
       this.load.rexWebFont({
         google: {
-            families: ['Bangers','Gloria Hallelujah','Oswald','Londrina Solid']
+            families: ['Bangers','Gloria Hallelujah','Oswald','Londrina Solid','Roboto']
           }
         });
         this.load.image('board', 'assets/board.png');
         this.load.image('items', 'assets/items.png');
-        this.load.image('panel', 'assets/panel.png');
+        this.load.image('panel', 'assets/messagepanel.png');
         this.load.atlas('player', 'assets/player.png', 'assets/player.json');
         this.load.atlas('dice', 'assets/dice.png', 'assets/dice.json')
     },
@@ -40,6 +40,59 @@ export default new Phaser.Class({
         {'land':89,'end':49,'up':false},
         {'land':99,'end':21,'up':false}
       ];
+      //Define the text to show on events such as land on a snake or ladder
+      this.autEvents = [{"pos": [{"title": "Special Interest",
+                                "description" : "Your special interest allows you to demonstrate specialist knowledge in a job interview. " +
+                                  "You are hired for the position.\n Many autistics have special interests which means specialist knowledge in one area. " +
+                                   "This can be an advantage and can help us to land job roles by being able to demonstrate knowledge in an area of expertise. "},
+                                {"title": "Honesty",
+                                "description" : "You tell the truth when asked about something and this gains you respect.\n" +
+                                 "One of the positive aspects of autism is honesty. It is very hard for us to tell lies so we tend to be very honest which is a positive character trait."},
+                                 {"title": "Problem Solving",
+                                 "description" : "You are able to solve a problem at work and this gains recognition.\n" +
+                                  "Autistic people tend to have good problem solving skills. Due to our ability to focus and apply analytical thinking to problems we tend to be good at finding solutions to problems. \n" +
+                                "This isn't just limited to maths we can be be good problem solvers in other areas as well"},
+                                {"title": "Work Ethics",
+                                "description" : "You do a hard day\'s work and this is recognised by your neurotypical boss.\n" +
+                                 "Despite our difficulties with employment we tend to be incredibly had working people. When we are working on a task that we can really focus on and grabs our interest we work incredibly hard " +
+                                 "on that until we have found the solution. \n Employers need to recognise this trait in us."},
+                                 {"title": "Routine",
+                                 "description" : "You are able to follow your routine and get everything done.\n" +
+                                  "Most of us have strict routines that we follow without failure. This can make us very reliable people which is a positive trait to have."
+                                 },
+                                 {"title": "Sensory Super Power",
+                                 "description" : "Our hypersensitivity can be a positive aspect as well.\n" +
+                                  "When we are able to focus, it can make us very good at noticing detail, in a song, picture for example which can be developed into skills where this would be useful such as " +
+                                  " the creative professions."
+                                 }
+                              ]},
+                        {"neg": [{"title": "Relationships",
+                                "description" : "Your are dumped again! Relationships are very difficult for us.\n Many of us are unable to find a partner and remain single for the rest of " +
+                                  "our lives.\n If we are able to get into a relationship then often they tend to be short and end in disaster due to our inability to form emotional bonds with people."},
+                                {"title": "Fired!",
+                                "description" : "You are sacked again from another job.\n" +
+                                 "Many of us have difficulty in finding and retaining employment due to the difficulties we have interpreting instructions.\n" +
+                                  "As we tend to take instructions literally it is hard for us to understand those unwritten rules so we end up misinterpreting our job role which can often result in us " +
+                                  "losing our jobs."},
+                                {"title": "Meltdown!",
+                                "description" : "The noise level gets too much and you have to run out of the room.\n" +
+                                 "Many of us have sensory issues which means that we can have hypersensitivity to certain stimuli. Sometimes this can just be too much for us and can cause a meltdown. " +
+                                "This is where everything shuts down for us."},
+                                {"title": "Jokes",
+                                "description" : "You are with a group of \"friends\" and are unable to get a joke.\n" +
+                                 "We often have difficulties with metaphor which makes it hard for us to get jokes and interpret humour. This can be a problem for us and can end up with us being the butt of " +
+                                "the joke."},
+                                {"title": "Emotional Support",
+                                "description" : "Your friend is crying and you are unable to comfort her." +
+                                 "We tend to have difficulties interpreting people's state of mind, communicated through facial expressions and body language. \n" +
+                                "It's not that we don't have emotions. We just struggle to interpret them so sometimes in situations like this we just don\'t know what to do."},
+                                {"title": "Bullying",
+                                "description" : "You are bullied at work." +
+                                 "The sad truth is that nearly all of us have been bullied at school or work. \n" +
+                                "Our differences make us stand out and we become easy targets to bullies as it is hard for us to \"answer back\". We often go through life struggling to \n" +
+                                "fit in and neurotypical people will take advantage of that."}
+                              ]}
+                          ]
 
      this.add.image(0,0,'board').setOrigin(0,0).setScale(0.5);
      this.add.image(0,0,'items').setOrigin(0,0).setScale(0.5);
@@ -288,6 +341,8 @@ export default new Phaser.Class({
       this.squareText.setText(item[0].end);
       player.anims.play('walk',true);
 
+      var scene = this;
+      console.log(this.autEvents);
       this.tweens.add({
         targets: this.player,
         x: destination.x,
@@ -299,10 +354,26 @@ export default new Phaser.Class({
             player.flipX = false; //Even level
           }
           player.anims.stop('walk',true);
+          //Show the event
+          //This displays an event to the user which describes an aspect of autism
+          //It will choose negative or positve depending on it being a snake or ladder
+          var evtIndex = randomNumber(0,6);
+          if(item[0].up) {
+            var autEvent = scene.autEvents[0]["pos"][evtIndex];
+            scene.messageScreen(autEvent.title,autEvent.description.split('\n'),"Press Space to Continue");
+            scene.gamePanelContainer.setVisible(false);
+            scene.running = false;
+          } else {
+            var autEvent = scene.autEvents[1]["neg"][evtIndex];
+            scene.messageScreen(autEvent.title,autEvent.description.split('\n'),"Press Space to Continue");
+            scene.gamePanelContainer.setVisible(false);
+            scene.running = false;
+          }
+          player.rolling = true;
         },
       });
     }
-    this.player.rolling = false;
+    this.player.rolling = false; //Prevent immediate re-roll after displaying message
   },
 
   messageScreen: function(title,text, message) {
@@ -316,19 +387,24 @@ export default new Phaser.Class({
 
     var titleText = this.add.text(400, 100, title, {
         fontSize: '20px',
-        fill: '#ffffff',
+        fontFamily: 'Roboto',
+        fill: '222222',
         wordWrap: { width: 450, useAdvancedWrap: true }
     }).setOrigin(0.5,0);
 
+
+    //Need to find way of aligning text
     this.messageContainer.add(titleText);
 
     var txtOffset = 150;
     for(var i=0;i<text.length;i++) {
-      var scrText = this.add.text(400, txtOffset, text[i], {
+      var scrText = this.add.text(200, txtOffset, text[i], {
           fontSize: '20px',
-          fill: '#ffffff',
-          wordWrap: { width: 450, useAdvancedWrap: true }
-      }).setOrigin(0.5,0);
+          fontFamily: 'Roboto',
+          fill: '222222',
+          wordWrap: { width: 450, useAdvancedWrap: true },
+          align: 'left'
+      }).setOrigin(0,0);
 
       console.log(scrText.height);
       txtOffset += scrText.height + 20;
@@ -338,7 +414,8 @@ export default new Phaser.Class({
 
     var flashText = this.add.text(400, txtOffset+20, message, {
         fontSize: '20px',
-        fill: '#ffffff',
+        fontFamily: 'Roboto',
+        fill: '222222',
         wordWrap: { width: 450, useAdvancedWrap: true }
     }).setOrigin(0.5,0);
 
@@ -367,16 +444,19 @@ export default new Phaser.Class({
     this.gamePanelContainer = this.add.container(0,0);
     var squareWord = this.add.text(675, 75, "SQUARE", {
         fontSize: '20px',
+        fontFamily: 'Roboto',
         fill: '#ffffff',
         wordWrap: { width: 450, useAdvancedWrap: true }
     }).setOrigin(0.5,0)
     this.squareText = this.add.text(675, 125, "1", {
         fontSize: '20px',
+        fontFamily: 'Roboto',
         fill: '#ffffff',
         wordWrap: { width: 450, useAdvancedWrap: true }
     }).setOrigin(0.5,0);
     var flashText = this.add.text(675, 275, "PRESS SPACE TO ROLL", {
         fontSize: '20px',
+        fontFamily: 'Roboto',
         fill: '#ffffff',
         align: 'center',
         wordWrap: { width: 100, useAdvancedWrap: true }
